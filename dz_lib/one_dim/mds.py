@@ -1,6 +1,6 @@
-from dz_lib.u_pb import distributions, metrics
+from dz_lib.one_dim import distributions, metrics
 from sklearn.manifold import MDS
-from dz_lib.u_pb.data import SampleSheet
+from dz_lib.one_dim.data import Sample
 import numpy as np
 
 class MDSPoint:
@@ -10,8 +10,7 @@ class MDSPoint:
         self.label = label
         self.nearest_neighbor = nearest_neighbor
 
-def multidimensional_scaling_function(sample_sheet: SampleSheet, metric: str = "similarity"):
-    samples = sample_sheet.samples
+def multidimensional_scaling_function(samples: [Sample], metric: str = "similarity"):
     sample_names = [sample.name for sample in samples]
     n_samples = len(samples)
     dissimilarity_matrix = np.zeros((n_samples, n_samples))

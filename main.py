@@ -1,4 +1,4 @@
-from dz_lib.u_pb import distributions, data
+from dz_lib.one_dim import distributions, data
 def test():
     print(distributions.kernel_density_estimate(data.Sample("name", [data.Grain(2, 1)])))
 

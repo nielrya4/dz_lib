@@ -1,19 +1,14 @@
 import numpy as np
 
 class Grain:
-    def __init__(self, age: float, uncertainty: float):
+    def __init__(self, age: float, hafnium: float):
         self.age = age
-        self.uncertainty = uncertainty
+        self.hafnium = hafnium
 
 class Sample:
     def __init__(self, name: str, grains: [Grain]):
         self.name = name
         self.grains = grains
-
-    def replace_grain_uncertainties(self, bandwidth: float):
-        for grain in self.grains:
-            grain.uncertainty = bandwidth
-        return self
 
     def get_q1_age(self):
         ages = self.get_ages()
@@ -44,8 +39,3 @@ class Sample:
             if grain.age > q3 + 1.5 * iqr or grain.age < q1 - 1.5 * iqr:
                 outliers.append(grain)
         return outliers
-
-class SampleSheet:
-    def __init__(self, name: str, samples: [Sample]):
-        self.name = name
-        self.samples = samples

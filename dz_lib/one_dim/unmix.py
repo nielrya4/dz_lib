@@ -1,6 +1,6 @@
 from concurrent.futures import ProcessPoolExecutor
 import numpy as np
-from dz_lib.u_pb import metrics
+from dz_lib.one_dim import metrics
 import random
 
 def monte_carlo_model(sink_y_values: [float], sources_y_values: [[float]], n_trials: int=10000, metric: str="cross_correlation"):
