@@ -1,6 +1,8 @@
-from dz_lib.one_dim import distributions, data
+from dz_lib.univariate import distributions, data
+from dz_lib.utils import fonts
 def test():
-    print(distributions.kernel_density_estimate(data.Sample("name", [data.Grain(2, 1)])))
+    print(fonts.get_sys_fonts())
+    print(fonts.get_font("/home/ryan/PycharmProjects/dzToolBox/static/global/fonts/t"))
 
 if __name__ == '__main__':
     test()
