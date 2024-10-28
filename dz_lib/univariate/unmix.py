@@ -4,7 +4,7 @@ import pandas as pd
 from dz_lib.univariate import metrics
 from dz_lib.utils import encode, fonts, matrices
 import random
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 
 
 class Contribution:
@@ -48,7 +48,7 @@ class UnmixingTrial:
         model_line = np.zeros_like(sink_line)
         for j, source_line in enumerate(source_lines):
             model_line += source_line * rands[j]
-        if self.metric == "r2":
+        if self.metric == "cross_correlation":
             val = metrics.r2(sink_line, model_line)
         elif self.metric == "ks":
             val = metrics.ks(sink_line, model_line)
@@ -70,26 +70,29 @@ def relative_contribution_graph(
         contributions: [Contribution],
         title: str = "Relative Contribution Graph",
         output_format: str = 'svg',
-        font_path: str = fonts.get_default_font().get_name,
+        font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
-    ):
+):
     sample_names = [contribution.name for contribution in contributions]
     x = range(len(contributions))
     y = [contribution.contribution for contribution in contributions]
     e = [contribution.standard_deviation for contribution in contributions]
-    font = fonts.get_font(font_path)
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100, squeeze=False)
+    if font_path:
+        font = fonts.get_font(font_path)
+    else:
+        font = fonts.get_default_font()
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100, squeeze=True)
     ax.errorbar(x, y, yerr=e, linestyle="none", marker='.')
-    ax.set_title(title, fontsize=font_size*2, fontproperties=font)
+    ax.set_title(title, fontsize=font_size * 2, fontproperties=font)
     ax.set_xticks(x)
     ax.set_xticklabels(sample_names, rotation=45, ha='right', fontsize=font_size, fontproperties=font)
     plt.tight_layout()
     if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="plotly")
+        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
     else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="plotly", img_format=output_format))
+        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
     return return_str
 
 
@@ -116,13 +119,16 @@ def top_trials_graph(
         model_lines: [[float]],
         title: str = "Top Trials Graph",
         output_format: str = 'svg',
-        font_path: str = fonts.get_default_font().get_name,
+        font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
     ):
     x = np.linspace(0, 4000, 1000).reshape(-1, 1)
-    font = fonts.get_font(font_path)
+    if font_path:
+        font = fonts.get_font(font_path)
+    else:
+        font = fonts.get_default_font()
     fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
     for i, model_kde in enumerate(model_lines):
         ax.plot(x, model_kde, 'c-', label="Top Trials" if i == 0 else "_Top Trials")
@@ -134,7 +140,7 @@ def top_trials_graph(
     ax.set_ylabel("Probability Differential", fontsize=font_size, fontproperties=font)
     plt.tight_layout()
     if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="plotly")
+        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
     else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="plotly", img_format=output_format))
+        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
     return return_str

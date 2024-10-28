@@ -1,12 +1,12 @@
 import numpy as np
 
-class Grain:
+class BivariateGrain:
     def __init__(self, age: float, hafnium: float):
         self.age = age
         self.hafnium = hafnium
 
-class Sample:
-    def __init__(self, name: str, grains: [Grain]):
+class BivariateSample:
+    def __init__(self, name: str, grains: [BivariateGrain]):
         self.name = name
         self.grains = grains
 
