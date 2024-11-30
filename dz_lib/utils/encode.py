@@ -14,7 +14,7 @@ def buffer_to_base64(buffer: BytesIO, mime_type: str) -> str:
     return f"data:{mime_type};base64,{base64_str}"
 
 def fig_to_img_buffer(fig, fig_type="plotly", img_format="svg") -> BytesIO:
-    accepted_image_formats = ['jpg', 'jpeg', 'png', 'pdf', 'eps', 'webp', 'svg']
+    accepted_image_formats = ['jpg', 'jpeg', 'png', 'pdf', 'eps', 'svg']
     if fig_type == "plotly":
         if check(file_format=img_format, accepted_formats=accepted_image_formats):
             buffer = BytesIO()
