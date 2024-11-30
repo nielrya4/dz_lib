@@ -2,10 +2,11 @@ import numpy as np
 import plotly.graph_objects as go
 import scipy.stats as st
 from dz_lib.bivariate.data import BivariateSample
-from dz_lib.utils.encode import buffer_to_base64, fig_to_img_buffer, buffer_to_utf8
-from dz_lib.utils import encode
+from dz_lib.utils import fonts
 from scipy.ndimage import zoom
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
+
 
 class BivariateDistribution:
     def __init__(
@@ -46,10 +47,9 @@ def kde_function_2d(sample: BivariateSample):
 
 def kde_graph_2d(
         bivariate_distro: BivariateDistribution,
-        title: str = "2D Kernel Density Estimate",
-        output_format: str = "html",
+        title: str = None,
         show_points: bool = True,
-        font: str = 'ubuntu',
+        font_path: str=None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
@@ -57,6 +57,8 @@ def kde_graph_2d(
         y_axis_title: str = "εHf(t)",
         z_axis_title: str = "Intensity"
 ):
+    font_files = font_manager.FontProperties(fname=font_path)
+    font_name = font_files.get_name()
     mesh_x = bivariate_distro.mesh_x
     mesh_y = bivariate_distro.mesh_y
     mesh_z = bivariate_distro.mesh_z
@@ -81,7 +83,7 @@ def kde_graph_2d(
         "title": {
             "text": title,
             "font": {
-                "family": font,
+                "family": font_name,
                 "size": title_size,
                 "color": "black"
             }
@@ -91,7 +93,7 @@ def kde_graph_2d(
                 "title": {
                     "text": x_axis_title,
                     "font": {
-                        "family": font,
+                        "family": font_name,
                         "size": font_size,
                         "color": "black"
                     }
@@ -101,7 +103,7 @@ def kde_graph_2d(
                 "title": {
                     "text": y_axis_title,
                     "font": {
-                        "family": font,
+                        "family": font_name,
                         "size": font_size,
                         "color": "black"
                     }
@@ -111,7 +113,7 @@ def kde_graph_2d(
                 "title": {
                     "text": z_axis_title,
                     "font": {
-                        "family": font,
+                        "family": font_name,
                         "size": font_size,
                         "color": "black"
                     }
@@ -122,16 +124,13 @@ def kde_graph_2d(
         "height": fig_height * 100
     }
     fig.update_layout(layout_dict)
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="plotly")
-    else:
-        return_str = buffer_to_utf8(fig_to_img_buffer(fig, fig_type="plotly", img_format=output_format))
-    return return_str
+    return fig
 
 def heatmap(
         bivariate_distro: BivariateDistribution,
         show_points=False,
-        output_format: str='html',
+        font_path: str=None,
+        font_size: float = 12,
         title="Heatmap",
         color_map="viridis",
         rescale_factor=1,
@@ -146,17 +145,19 @@ def heatmap(
     x_rescaled = zoom(mesh_x, rescale_factor)
     y_rescaled = zoom(mesh_y, rescale_factor)
     z_rescaled = zoom(mesh_z, rescale_factor)
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=200)
+    if font_path:
+        font = fonts.get_font(font_path)
+    else:
+        font = fonts.get_default_font()
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
+    title_size = font.get_size() * 2
+    fig.suptitle(title, fontsize=title_size, fontproperties=font)
     c = ax.pcolormesh(x_rescaled, y_rescaled, z_rescaled, shading='gouraud', cmap=color_map, edgecolors='face')
     fig.colorbar(c, ax=ax)
-    ax.set_xlabel('Age (Ma)')
-    ax.set_ylabel('εHf(t)')
-    ax.set_title(title)
+    fig.text(0.5, 0.01, 'Age (Ma)', ha='center', va='center', fontsize=font_size, fontproperties=font)
+    fig.text(0.01, 0.5, 'εHf(t)', va='center', rotation='vertical', fontsize=font_size, fontproperties=font)
+
     if show_points:
         ax.scatter(sample_x, sample_y, color='white', s=10, edgecolor='black', label='Data Points')
         ax.legend()
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="matplotlib", vector=False)
-    else:
-        return_str = buffer_to_base64(fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
-    return return_str
+    return fig

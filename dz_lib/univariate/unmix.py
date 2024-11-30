@@ -2,7 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 from dz_lib.univariate import metrics
-from dz_lib.utils import encode, fonts, matrices
+from dz_lib.utils import fonts
 import random
 from matplotlib import pyplot as plt
 
@@ -69,7 +69,6 @@ class UnmixingTrial:
 def relative_contribution_graph(
         contributions: [Contribution],
         title: str = "Relative Contribution Graph",
-        output_format: str = 'svg',
         font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
@@ -89,42 +88,40 @@ def relative_contribution_graph(
     ax.set_xticks(x)
     ax.set_xticklabels(sample_names, rotation=45, ha='right', fontsize=font_size, fontproperties=font)
     plt.tight_layout()
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
-    else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
-    return return_str
+    return fig
 
 
 def relative_contribution_table(
         contributions: [Contribution],
-        test_type: str = "r2"
+        metric: str = "cross_correlation",
+        title=f"Relative Contribution Table"
     ):
     sample_names = [contribution.name for contribution in contributions]
     percent_contributions = [contribution.contribution for contribution in contributions]
     standard_deviations = [contribution.standard_deviation for contribution in contributions]
     data = {
-        "Sample Name": sample_names,
-        f"% Contribution ({test_type} test)": percent_contributions,
+        f"% Contribution (metric={metric})": percent_contributions,
         "Standard Deviation": standard_deviations
     }
-    df = pd.DataFrame(data)
-    df.columns.name = "-"
-    output = matrices.dataframe_to_html(df)
-    return output
+    indices = [f"{name}" for name in sample_names]
+    df = pd.DataFrame(data, index=indices)
+    df.style.set_table_attributes("style='display:inline'").set_caption(title)
+    df = df.rename_axis(columns="Sample Name")
+    return df
 
 
 def top_trials_graph(
         sink_line: [float],
         model_lines: [[float]],
+        x_range: [float, float] = [0, 4500],
         title: str = "Top Trials Graph",
-        output_format: str = 'svg',
         font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
     ):
-    x = np.linspace(0, 4000, 1000).reshape(-1, 1)
+    #todo: pass in entire distributions instead of just y values
+    x = np.linspace(x_range[0], x_range[1], 1000).reshape(-1, 1)
     if font_path:
         font = fonts.get_font(font_path)
     else:
@@ -139,8 +136,4 @@ def top_trials_graph(
     ax.set_xlabel("Age (Ma)", fontsize=font_size, fontproperties=font)
     ax.set_ylabel("Probability Differential", fontsize=font_size, fontproperties=font)
     plt.tight_layout()
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
-    else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
-    return return_str
+    return fig

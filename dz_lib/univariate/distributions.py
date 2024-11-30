@@ -56,9 +56,8 @@ def distribution_graph(
         distributions: [Distribution],
         stacked: bool = False,
         legend: bool = True,
-        title: str = "Distribution Function",
-        output_format: str = 'svg',
-        font_path: str = None,  # Updated to None
+        title: str = None,
+        font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
@@ -95,8 +94,4 @@ def distribution_graph(
     fig.text(0.01, 0.5, 'Probability Differential', va='center', rotation='vertical', fontsize=font_size,
              fontproperties=font)
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
-    else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
-    return return_str
+    return fig

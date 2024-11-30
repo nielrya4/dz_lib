@@ -67,8 +67,7 @@ def mds_function(samples: [Sample], metric: str = "similarity"):
 
 def mds_graph(
         points: [MDSPoint],
-        title: str = "Multidimensional Scaling Function",
-        output_format: str='svg',
+        title: str = None,
         font_path: str=None,
         font_size: float = 12,
         fig_width: float = 9,
@@ -96,8 +95,4 @@ def mds_graph(
     fig.text(0.5, 0.01, 'Dimension 1', ha='center', va='center', fontsize=font_size, fontproperties=font)
     fig.text(0.01, 0.5, 'Dimension 2', va='center', rotation='vertical', fontsize=font_size, fontproperties=font)
     fig.tight_layout()
-    if output_format == "html":
-        return_str = encode.fig_to_html(fig, fig_type="matplotlib")
-    else:
-        return_str = encode.buffer_to_utf8(encode.fig_to_img_buffer(fig, fig_type="matplotlib", img_format=output_format))
-    return return_str
+    return fig
