@@ -95,4 +95,5 @@ def mds_graph(
     fig.text(0.5, 0.01, 'Dimension 1', ha='center', va='center', fontsize=font_size, fontproperties=font)
     fig.text(0.01, 0.5, 'Dimension 2', va='center', rotation='vertical', fontsize=font_size, fontproperties=font)
     fig.tight_layout()
+    plt.close()
     return fig

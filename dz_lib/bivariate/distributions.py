@@ -160,4 +160,5 @@ def heatmap(
     if show_points:
         ax.scatter(sample_x, sample_y, color='white', s=10, edgecolor='black', label='Data Points')
         ax.legend()
+    plt.close()
     return fig

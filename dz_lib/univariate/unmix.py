@@ -88,6 +88,7 @@ def relative_contribution_graph(
     ax.set_xticks(x)
     ax.set_xticklabels(sample_names, rotation=45, ha='right', fontsize=font_size, fontproperties=font)
     plt.tight_layout()
+    plt.close()
     return fig
 
 
@@ -136,4 +137,5 @@ def top_trials_graph(
     ax.set_xlabel("Age (Ma)", fontsize=font_size, fontproperties=font)
     ax.set_ylabel("Probability Differential", fontsize=font_size, fontproperties=font)
     plt.tight_layout()
+    plt.close()
     return fig

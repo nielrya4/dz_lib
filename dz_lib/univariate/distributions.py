@@ -94,4 +94,5 @@ def distribution_graph(
     fig.text(0.01, 0.5, 'Probability Differential', va='center', rotation='vertical', fontsize=font_size,
              fontproperties=font)
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
+    plt.close()
     return fig
