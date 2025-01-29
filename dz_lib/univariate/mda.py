@@ -15,7 +15,7 @@ def youngest_single_grain(grains: [Grain]) -> Grain:
 
 def youngest_cluster_1s(
         grains: [Grain],
-        min_cluster_size: int = 3,
+        min_cluster_size: int = 2,
         contiguous: bool = True
 ) -> (Grain, float, int):
     sorted_grains = sorted(grains, key=lambda grain: grain.age + grain.uncertainty)
@@ -93,12 +93,12 @@ def youngest_3_zircons_overlap(
 
 def youngest_graphical_peak(
         grains: [Grain],
-        min_cluster_size: int = 1,
+        min_cluster_size: int = 2,
         threshold: float = 0.01,
         min_dist: float = 1.0,
         x_min: float = 0,
         x_max: float = 4500,
-        n_steps: int = 10000
+        n_steps: int = 100000
 ) -> float:
     if not grains:
         print("No grains provided.")
