@@ -179,6 +179,7 @@ def tau_method(
 
 
 # MDA utils:
+# Not usually used outside of this library
 def count_bins_around_peak(peak_age: float, distribution: distributions.Distribution, window: float = 1.0) -> int:
     return sum(1 for x in distribution.x_values if abs(x - peak_age) <= window / 2)
 
