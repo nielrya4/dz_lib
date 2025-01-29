@@ -1,16 +1,36 @@
 from dz_lib.utils import data
-from dz_lib.univariate import distributions, unmix, mda
+from dz_lib.univariate import mda2
 
 def test():
-    samples_array = data.excel_to_array("/home/ryan/Desktop/dz_data/20_50_30.xlsx")
+    samples_array = data.excel_to_array("/home/ryan/Desktop/dz_data/Anta_DZmix_Input_1D_only.xlsx")
     samples = data.read_1d_samples(samples_array)
-    distro = distributions.pdp_function(samples[0])
-    result = mda.youngest_gaussian_fit(distro)
-    if "error" in result:
-        print(result["error"])
-    else:
-        print("YGF:", result["YGF"])
-        print("YGF 1σ:", result["YGF_1s"])
-        print("YGF 2σ:", result["YGF_2s"])
+
+    grains = samples[0].grains
+
+    result = mda2.youngest_single_grain(grains)
+    print(f"youngest grain age: {result.age} uncertainty: {result.uncertainty}")
+
+    result = mda2.youngest_cluster_1s(grains)
+    print(f"youngest cluster 1s: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+    result = mda2.youngest_cluster_2s(grains)
+    print(f"youngest cluster 2s: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+    result = mda2.youngest_3_zircons(grains)
+    print(f"youngest 3 zircons: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+    result = mda2.youngest_3_zircons_overlap(grains)
+    print(f"youngest 3 zircons overlap: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+    result = mda2.youngest_graphical_peak(grains)
+    print(f"youngest graphical peak: {result}")
+
+    result = mda2.youngest_statistical_population(grains)
+    print(f"youngest statistical population: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+    result = mda2.tau_method(grains)
+    print(f"Tau Method: {result[0].age} uncertainty: {result[0].uncertainty}")
+
+
 if __name__ == '__main__':
     test()
