@@ -6,7 +6,8 @@ from dz_lib.univariate import distributions
 import numpy as np
 import scipy.stats as stats
 import peakutils
-
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 # MDA functions:
 def youngest_single_grain(grains: [Grain]) -> Grain:
@@ -229,3 +230,42 @@ def get_weighted_mean(
     mswd = s / (n - 1)
     uncertainty_2s = stats.norm.ppf(confidence_level + (1 - confidence_level) / 2.) * np.sqrt(1. / np.sum(np.array(errors) ** (-2)))
     return weighted_mean_age, uncertainty_2s, mswd
+
+def ranked_ages_plot(
+        grains: [Grain],
+        sort_with_uncertainty: bool=True,
+        legend: bool=True,
+        title: str=None,
+        font_path: str=None,
+        font_size: float=12,
+        fig_width: float=9,
+        fig_height: float=7,
+        colors_1s: str = "black",
+        colors_2s: str = "cornflowerblue",
+):
+
+    if sort_with_uncertainty:
+        sorted_grains = sorted(grains, key=lambda grain: grain.age + abs(grain.uncertainty)*2)
+    else:
+        sorted_grains = sorted(grains, key=lambda grain: grain.age)
+    ages = np.array([grain.age for grain in sorted_grains])
+    uncertainties = np.array([abs(grain.uncertainty) for grain in sorted_grains])
+    ranks = range(len(sorted_grains))
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
+    ax.scatter(ages, ranks, facecolors='white', edgecolors="k", marker='d', s=100, zorder=10)
+    ax.hlines(ranks, ages - 2 * uncertainties, ages + 2 * uncertainties, color=colors_2s, linewidth=4, label='2σ')
+    ax.hlines(ranks, ages - uncertainties, ages + uncertainties, color=colors_1s, linewidth=4, label='1σ')
+    if font_path:
+        font = fm.FontProperties(fname=font_path)
+    else:
+        font = None
+    ax.set_xlabel("Age (Ma)", fontsize=font_size, fontproperties=font)
+    ax.set_ylabel("Ranked Grains", fontsize=font_size, fontproperties=font)
+    if title:
+        ax.set_title(title, fontsize=font_size * 1.5, fontproperties=font)
+    if legend:
+        ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    ax.invert_yaxis()
+    fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
+    plt.close()
+    return fig
