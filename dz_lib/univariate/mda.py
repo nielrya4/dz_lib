@@ -8,6 +8,9 @@ import scipy.stats as stats
 import peakutils
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+
 
 # MDA functions:
 def youngest_single_grain(grains: [Grain]) -> Grain:
@@ -178,6 +181,34 @@ def tau_method(
     tau_WM, tau_WM_err2s, tau_WM_MSWD = get_weighted_mean(selected_grains)
     return Grain(age=tau_WM, uncertainty=tau_WM_err2s), tau_WM_MSWD, len(selected_grains)
 
+def youngest_gaussian_fit(grains: [Grain]) -> (Grain, distributions.Distribution):
+    temp_sample = Sample("temp", grains)
+    distro = distributions.kde_function(temp_sample)
+    x_values = np.array(distro.x_values)
+    y_values = np.array(distro.y_values)
+    def gaussian(x, a, mu, sigma):
+        return a * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
+    troughs, _ = find_peaks(-y_values)
+    if len(troughs) > 0:
+        tridx = troughs[0]
+    else:
+        tridx = len(x_values) - 1
+    mask = y_values[:tridx] > 1E-6
+    if np.any(mask):
+        min_idx = np.where(mask)[0][0]
+    else:
+        min_idx = 0
+    x_young = x_values[min_idx:tridx]
+    y_young = y_values[min_idx:tridx]
+    initial_guess = [y_young.max(), x_young[np.argmax(y_young)], np.std(x_young)]
+    params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess)
+    a_fit, mu_fit, sigma_fit = params
+    YGF_1s = sigma_fit / np.sqrt(2)  # 1 sigma
+    x_fit = np.linspace(x_values.min(), x_values.max(), 1000)
+    y_fit = gaussian(x_fit, *params)
+    fitted_grain = Grain(mu_fit, YGF_1s)
+    fitted_distro = distributions.Distribution(f"Youngest Gaussian Fit\nMean: {mu_fit:.2f} Ma\n1σ: {YGF_1s:.2f}", x_fit, y_fit)
+    return fitted_grain, fitted_distro
 
 # MDA utils:
 # Not usually used outside of this library
