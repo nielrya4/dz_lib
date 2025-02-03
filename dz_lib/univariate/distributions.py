@@ -10,6 +10,17 @@ class Distribution:
         self.x_values = x_values
         self.y_values = y_values
 
+    def subset(self, x_min: float, x_max: float):
+        points = []
+        for i, x_val in enumerate(self.x_values):
+            points[i] = (x_val, self.y_values[i])
+        new_x_vals = []
+        new_y_vals = []
+        for point in points:
+            if x_min < point[0] < x_max:
+                new_x_vals.append(point[0])
+                new_y_vals.append(point[1])
+        return Distribution(self.name, new_x_vals, new_y_vals)
 
 def kde_function(sample: Sample, bandwidth: float = 10, x_min: float=0, x_max: float=4500, n_steps: int = 1000):
     kde_sample = sample.replace_grain_uncertainties(bandwidth)
