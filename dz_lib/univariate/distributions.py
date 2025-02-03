@@ -2,6 +2,8 @@ from dz_lib.univariate.data import Sample
 from dz_lib.utils import fonts, encode
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
+
 
 
 class Distribution:
@@ -11,16 +13,26 @@ class Distribution:
         self.y_values = y_values
 
     def subset(self, x_min: float, x_max: float):
-        points = []
-        for i, x_val in enumerate(self.x_values):
-            points.append((x_val, self.y_values[i]))
-        new_x_vals = []
-        new_y_vals = []
-        for point in points:
-            if x_min < point[0] < x_max:
-                new_x_vals.append(point[0])
-                new_y_vals.append(point[1])
-        return Distribution(self.name, new_x_vals, new_y_vals)
+        # Subset x and y values within the specified range
+        mask = (self.x_values >= x_min) & (self.x_values <= x_max)
+        x_subset = self.x_values[mask]
+        y_subset = self.y_values[mask]
+
+        if len(x_subset) < 3:
+            # Not enough points to smooth, return raw subset
+            return Distribution(self.name, x_subset.tolist(), y_subset.tolist())
+
+        # Resample to ensure the subset has the same number of points as the original input
+        resample_points = len(self.x_values)
+
+        # Generate new x-values evenly spaced within the subset range
+        x_resampled = np.linspace(x_min, x_max, resample_points)
+
+        # Perform cubic spline smoothing
+        spline = make_interp_spline(x_subset, y_subset, k=3)
+        y_resampled = spline(x_resampled)
+
+        return Distribution(self.name, x_resampled.tolist(), y_resampled.tolist())
 
 def kde_function(sample: Sample, bandwidth: float = 10, x_min: float=0, x_max: float=4500, n_steps: int = 1000):
     kde_sample = sample.replace_grain_uncertainties(bandwidth)
