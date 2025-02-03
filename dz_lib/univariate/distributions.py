@@ -13,7 +13,7 @@ class Distribution:
     def subset(self, x_min: float, x_max: float):
         points = []
         for i, x_val in enumerate(self.x_values):
-            points[i].append((x_val, self.y_values[i]))
+            points.append((x_val, self.y_values[i]))
         new_x_vals = []
         new_y_vals = []
         for point in points:
