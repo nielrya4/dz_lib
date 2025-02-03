@@ -124,7 +124,6 @@ def youngest_graphical_peak(
         (age, count_bins_around_peak(age, distro))
         for age in peak_ages
     ]
-    print(valid_peaks)
     valid_peaks = [(age, count) for age, count in valid_peaks if count >= min_cluster_size]
     if not valid_peaks:
         print("No valid peaks found.")
@@ -250,8 +249,8 @@ def get_weighted_mean(
         grains: [Grain],
         confidence_level: float = 0.95
 ) -> [float, float, float]:
-    ages = np.array([abs(grain.age) for grain in grains])
-    errors = np.array([abs(grain.uncertainty) for grain in grains])
+    ages = np.array([float(abs(grain.age)) for grain in grains])
+    errors = np.array([float(abs(grain.uncertainty)) for grain in grains])
     if not grains:
         raise ValueError("Grains list cannot be empty.")
     weight = np.array(errors) ** (-2) / np.sum(np.array(errors) ** (-2))
