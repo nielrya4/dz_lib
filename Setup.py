@@ -9,7 +9,7 @@ with open("requirements.txt", "r") as req_file:
 
 setuptools.setup(
     name="dz_lib",
-    version="1.2.1",
+    version="1.2.2",
     author="Ryan Nielsen",
     author_email="nielrya4@isu.edu",
     long_description=long_description,

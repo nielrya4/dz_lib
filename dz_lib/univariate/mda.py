@@ -10,18 +10,21 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+from matplotlib.lines import Line2D
+import pandas as pd
 
 
 # MDA functions:
-def youngest_single_grain(grains: [Grain]) -> Grain:
+def youngest_single_grain(grains: [Grain]) -> (Grain, float):
     sorted_grains = sorted(grains, key=lambda grain: grain.age)
-    return sorted_grains[0]
+    n = 1.0
+    return sorted_grains[0], n
 
 def youngest_cluster_1s(
         grains: [Grain],
         min_cluster_size: int = 2,
         contiguous: bool = True
-) -> (Grain, float, int):
+) -> (Grain, int, float):
     sorted_grains = sorted(grains, key=lambda grain: grain.age + grain.uncertainty)
     youngest_cluster = get_youngest_cluster(
         grains=sorted_grains,
@@ -35,13 +38,13 @@ def youngest_cluster_1s(
         confidence_level=0.95
     )
     weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty)
-    return weighted_grain, mswd, len(youngest_cluster)
+    return weighted_grain, len(youngest_cluster), mswd
 
 def youngest_cluster_2s(
         grains: [Grain],
         min_cluster_size: int = 3,
         contiguous: bool = True
-    ) -> (Grain, float, int):
+    ) -> (Grain, int, float):
     for grain in grains:
         grain.uncertainty += grain.uncertainty
     sorted_grains = sorted(grains, key=lambda grain: grain.age + grain.uncertainty)
@@ -57,9 +60,9 @@ def youngest_cluster_2s(
         confidence_level=0.95
     )
     weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty)
-    return weighted_grain, mswd, len(youngest_cluster)
+    return weighted_grain, len(youngest_cluster), mswd
 
-def youngest_3_zircons(grains: [Grain]) -> (Grain, float):
+def youngest_3_zircons(grains: [Grain]) -> (Grain, int, float):
     if len(grains) < 3:
         return None, float('nan')
     sorted_grains = sorted(grains, key=lambda grain: grain.age)
@@ -69,13 +72,14 @@ def youngest_3_zircons(grains: [Grain]) -> (Grain, float):
         confidence_level=0.8
     )
     weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty)
-    return weighted_grain, mswd
+    n = 3
+    return weighted_grain, n, mswd
 
 def youngest_3_zircons_overlap(
         grains: [Grain],
         sigma: int = 1,
         contiguous: bool = True
-) -> (Grain, float, int):
+) -> (Grain, int, float):
     if len(grains) < 3:
         return None, float('nan'), 0
     sorted_grains = sorted(grains, key=lambda grain: grain.age + sigma * grain.uncertainty)
@@ -92,7 +96,7 @@ def youngest_3_zircons_overlap(
         confidence_level=0.95
     )
     weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty)
-    return weighted_grain, mswd, len(youngest_cluster)
+    return weighted_grain, len(youngest_cluster), mswd
 
 
 def youngest_graphical_peak(
@@ -136,7 +140,7 @@ def youngest_statistical_population(
     mswd_threshold: float = 1.0,
     sigma: float = 1.0,
     add_uncertainty: bool=False
-) -> (Grain, float, int):
+) -> (Grain, int, float):
     if add_uncertainty:
         sorted_grains = sorted(grains, key=lambda g: g.age + sigma * g.uncertainty)
     else:
@@ -155,14 +159,14 @@ def youngest_statistical_population(
             best_count = len(subset)
         if mswd > 1:
             break
-    return best_grain, best_mswd, best_count if best_grain else (None, float('nan'), 0)
+    return best_grain, best_count if best_grain else (None, float('nan'), 0), best_mswd
 
 def tau_method(
     grains: [Grain],
     min_cluster_size: int = 3,
     thres: float = 0.01,
     min_dist: int = 1,
-) -> (Grain, float, int):
+) -> (Grain, int, float):
     distro = distributions.pdp_function(Sample("temp", grains))
     x_values = distro.x_values
     y_values = distro.y_values
@@ -178,7 +182,7 @@ def tau_method(
     youngest_index = valid_clusters[0]
     selected_grains = grains_in_troughs[youngest_index]
     tau_WM, tau_WM_err2s, tau_WM_MSWD = get_weighted_mean(selected_grains)
-    return Grain(age=tau_WM, uncertainty=tau_WM_err2s), tau_WM_MSWD, len(selected_grains)
+    return Grain(age=tau_WM, uncertainty=tau_WM_err2s), len(selected_grains), tau_WM_MSWD
 
 def youngest_gaussian_fit(grains: [Grain], n_steps: int=1000) -> (Grain, distributions.Distribution):
     temp_sample = Sample("temp", grains)
@@ -270,8 +274,8 @@ def ranked_ages_plot(
         font_size: float=12,
         fig_width: float=9,
         fig_height: float=7,
-        colors_1s: str = "black",
-        colors_2s: str = "cornflowerblue",
+        color_1s: str = "black",
+        color_2s: str = "cornflowerblue",
 ):
 
     if sort_with_uncertainty:
@@ -283,8 +287,8 @@ def ranked_ages_plot(
     ranks = range(len(sorted_grains))
     fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
     ax.scatter(ages, ranks, facecolors='white', edgecolors="k", marker='d', s=100, zorder=10)
-    ax.hlines(ranks, ages - 2 * uncertainties, ages + 2 * uncertainties, color=colors_2s, linewidth=4, label='2σ')
-    ax.hlines(ranks, ages - uncertainties, ages + uncertainties, color=colors_1s, linewidth=4, label='1σ')
+    ax.hlines(ranks, ages - 2 * uncertainties, ages + 2 * uncertainties, color=color_2s, linewidth=4, label='2σ')
+    ax.hlines(ranks, ages - uncertainties, ages + uncertainties, color=color_1s, linewidth=4, label='1σ')
     if font_path:
         font = fm.FontProperties(fname=font_path)
     else:
@@ -299,3 +303,80 @@ def ranked_ages_plot(
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
     plt.close()
     return fig
+
+
+def comparison_graph(
+        grains: [Grain],
+        title: str = None,
+        font_path: str = None,
+        font_size: float = 12,
+        fig_width: float = 9,
+        fig_height: float = 7,
+        color_1s: str = "black",
+        color_2s: str = "cornflowerblue",
+):
+    ysg, ysg_n = youngest_single_grain(grains)
+    ypp = Grain(youngest_graphical_peak(grains), float('nan'))
+    ygf, _ = youngest_gaussian_fit(grains)
+    ygc1s, _, _ = youngest_cluster_1s(grains)
+    ygc2s, _, _ = youngest_cluster_2s(grains)
+    y3zo, _, _ = youngest_3_zircons_overlap(grains)
+    y3za, _, _ = youngest_3_zircons(grains)
+    tau, _, _ = tau_method(grains)
+    ysp, _, _ = youngest_statistical_population(grains)
+    methods = ['YSG', 'YPP', 'YGF', 'YGC1s', 'YGC2s', 'Y3ZO', 'Y3Za', 'TAU', 'YSP']
+    ages = [ysg.age, ypp.age, ygf.age, ygc1s.age, ygc2s.age, y3zo.age, y3za.age, tau.age, ysp.age]
+    uncertainties = [ysg.uncertainty, ypp.uncertainty, ygf.uncertainty, ygc1s.uncertainty, ygc2s.uncertainty,
+                     y3zo.uncertainty, y3za.uncertainty, tau.uncertainty, ysp.uncertainty]
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
+    x = np.arange(len(methods))
+    for i in range(len(methods)):
+        ax.vlines(x[i], ages[i] - uncertainties[i]*2, ages[i] + uncertainties[i]*2, color=color_2s, linewidth=5)
+    for i in range(len(methods)):
+        ax.vlines(x[i], ages[i] - uncertainties[i], ages[i] + uncertainties[i], color=color_1s, linewidth=5)
+    ax.scatter(x, ages, color='white', edgecolor='black', s=100, zorder=3, marker='s')
+    ax.set_xticks(x)
+    ax.set_xticklabels(methods, rotation=45, ha='right')
+    ax.set_xlabel('Method', fontsize=font_size)
+    ax.set_ylabel('Age (Ma)', fontsize=font_size)
+    if font_path:
+        font_prop = fm.FontProperties(fname=font_path)
+    else:
+        font_prop = None
+    if title:
+        ax.set_title(title, fontsize=font_size * 1.5, fontproperties=font_prop)
+    legend_elements = [
+        Line2D([0], [0], color='cornflowerblue', lw=5, label='2s'),
+        Line2D([0], [0], color='black', lw=5, label='1s')
+    ]
+    ax.legend(handles=legend_elements, loc='lower left')
+    fig.tight_layout()
+    plt.close()
+    return fig
+
+def comparison_table(grains: [Grain]):
+    ysg, ysg_n = youngest_single_grain(grains)
+    ypp = Grain(youngest_graphical_peak(grains), float('nan'))
+    ypp_n = float('nan')
+    ygf, _ = youngest_gaussian_fit(grains)
+    ygf_n = float('nan')
+    ygc1s, ygc1s_n, _ = youngest_cluster_1s(grains)
+    ygc2s, ygc2s_n, _ = youngest_cluster_2s(grains)
+    y3zo, y3zo_n, _ = youngest_3_zircons_overlap(grains)
+    y3za, y3za_n, _ = youngest_3_zircons(grains)
+    tau, tau_n, _ = tau_method(grains)
+    ysp, ysp_n, _ = youngest_statistical_population(grains)
+    methods = ['YSG', 'YPP', 'YGF', 'YGC1s', 'YGC2s', 'Y3ZO', 'Y3Za', 'TAU', 'YSP']
+    ages = [ysg.age, ypp.age, ygf.age, ygc1s.age, ygc2s.age, y3zo.age, y3za.age, tau.age, ysp.age]
+    uncertainties = [ysg.uncertainty, ypp.uncertainty, ygf.uncertainty, ygc1s.uncertainty, ygc2s.uncertainty,
+                     y3zo.uncertainty, y3za.uncertainty, tau.uncertainty, ysp.uncertainty]
+    n_values = [ysg_n, ypp_n, ygf_n, ygc1s_n, ygc2s_n, y3zo_n, y3za_n, tau_n, ysp_n]
+    data = {
+        f"% MDA (Ma)": ages,
+        "1s (Myr)": uncertainties,
+        "2s (Myr)": [uncertainty * 2 for uncertainty in uncertainties],
+        "n": n_values
+    }
+    df = pd.DataFrame(data, index=methods)
+    df = df.rename_axis(columns="")
+    return df

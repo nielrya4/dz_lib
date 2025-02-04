@@ -1,9 +1,10 @@
-openpyxl~=3.1.5
+openpyxl
 matplotlib
+pyexcel
 numpy
-pandas~=2.2.3
-plotly~=5.4.0
+pandas
+plotly
 scipy
-scikit-learn~=1.5.2
-setuptools~=68.2.0
-peakutils
+PeakUtils
+scikit-learn
+setuptools
