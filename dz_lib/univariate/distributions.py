@@ -13,36 +13,21 @@ class Distribution:
         self.y_values = y_values
 
     def subset(self, x_min: float, x_max: float):
-        # Subset x and y values within the specified range
-        mask = (self.x_values >= x_min) & (self.x_values <= x_max)
-        x_subset = self.x_values[mask]
-        y_subset = self.y_values[mask]
-
-        if len(x_subset) < 3:
-            # Not enough points to smooth, return raw subset
-            return Distribution(self.name, x_subset.tolist(), y_subset.tolist())
-
-        # Resample to ensure the subset has the same number of points as the original input
-        resample_points = len(self.x_values)
-
-        # Generate new x-values evenly spaced within the subset range
-        x_resampled = np.linspace(x_min, x_max, resample_points)
-
-        # Perform cubic spline smoothing
-        spline = make_interp_spline(x_subset, y_subset, k=3)
-        y_resampled = spline(x_resampled)
-
-        return Distribution(self.name, x_resampled.tolist(), y_resampled.tolist())
+        new_y_vals = [
+            y if x_min < x < x_max else 0
+            for x, y in zip(self.x_values, self.y_values)
+        ]
+        return Distribution(self.name, self.x_values, new_y_vals)
 
 def kde_function(sample: Sample, bandwidth: float = 10, x_min: float=0, x_max: float=4500, n_steps: int = 1000):
     kde_sample = sample.replace_grain_uncertainties(bandwidth)
-    distro = pdp_function(kde_sample, x_min=x_min, x_max=x_max, n_steps=n_steps)
+    distro = pdp_function(kde_sample, x_min=x_min, x_max=x_max)
     x_values = distro.x_values
     y_values = distro.y_values
     return Distribution(distro.name, x_values, y_values)
 
-
-def pdp_function(sample: Sample, x_min: float=0, x_max: float=4500, n_steps: int = 1000):
+def pdp_function(sample: Sample, x_min: float=0, x_max: float=4500):
+    n_steps = 10*int(x_max - x_min + 1)
     x_values = np.linspace(x_min, x_max, n_steps)
     y_values = np.zeros_like(x_values)
     ages = [grain.age for grain in sample.grains]
@@ -77,6 +62,8 @@ def get_x_max(sample: Sample):
 
 def distribution_graph(
         distributions: [Distribution],
+        x_min: float=0,
+        x_max: float=4500,
         stacked: bool = False,
         legend: bool = True,
         title: str = None,
@@ -117,5 +104,6 @@ def distribution_graph(
     fig.text(0.01, 0.5, 'Probability Differential', va='center', rotation='vertical', fontsize=font_size,
              fontproperties=font)
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
+    plt.xlim(x_min, x_max)
     plt.close()
     return fig

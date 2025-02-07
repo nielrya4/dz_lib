@@ -46,7 +46,7 @@ def youngest_cluster_2s(
         contiguous: bool = True
     ) -> (Grain, int, float):
     for grain in grains:
-        grain.uncertainty += grain.uncertainty
+        grain.uncertainty = grain.uncertainty * 2
     sorted_grains = sorted(grains, key=lambda grain: grain.age + grain.uncertainty)
     youngest_cluster = get_youngest_cluster(
         grains=sorted_grains,
@@ -55,6 +55,8 @@ def youngest_cluster_2s(
     )
     if not youngest_cluster:
         return None, float('nan'), 0
+    for grain in youngest_cluster:
+        grain.uncertainty = grain.uncertainty / 2
     weighted_mean, uncertainty, mswd = get_weighted_mean(
         grains=youngest_cluster,
         confidence_level=0.95
@@ -75,28 +77,28 @@ def youngest_3_zircons(grains: [Grain]) -> (Grain, int, float):
     n = 3
     return weighted_grain, n, mswd
 
-def youngest_3_zircons_overlap(
-        grains: [Grain],
-        sigma: int = 1,
-        contiguous: bool = True
-) -> (Grain, int, float):
+
+def youngest_3_zircons_overlap(grains: [Grain], sigma: int = 1) -> (Grain, int, float):
+    """Find the weighted mean of the youngest 3 overlapping zircon grains."""
+
     if len(grains) < 3:
-        return None, float('nan'), 0
-    sorted_grains = sorted(grains, key=lambda grain: grain.age + sigma * grain.uncertainty)
-    youngest_cluster = get_youngest_cluster(
-        grains=sorted_grains,
-        min_cluster_size=3,
-        add_uncertainty=True,
-        contiguous=contiguous
+        return Grain(age=0, uncertainty=0), 0, 0  # Match MATLAB output
+
+    # Sort grains by adjusted age (like MATLAB's `YGC2s_data`)
+    sorted_grains = sorted(grains, key=lambda g: g.age + sigma * g.uncertainty)
+
+    # Select the first 3 grains (like MATLAB's `Y3Zo_data = YGC2s_data(1:3,:)`)
+    youngest_cluster = sorted_grains[:3]
+
+    # Compute weighted mean, uncertainty, and MSWD
+    weighted_mean, uncertainty_1s, mswd = get_weighted_mean(
+        grains=youngest_cluster
     )
-    if not youngest_cluster or len(youngest_cluster) < 3:
-        return None, float('nan'), 0
-    weighted_mean, uncertainty, mswd = get_weighted_mean(
-        grains=youngest_cluster,
-        confidence_level=0.95
-    )
-    weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty)
-    return weighted_grain, len(youngest_cluster), mswd
+    n = len(youngest_cluster)
+    # Create a weighted grain with the computed mean age and 2σ uncertainty
+    weighted_grain = Grain(age=weighted_mean, uncertainty=uncertainty_1s)
+
+    return weighted_grain, n, mswd
 
 
 def youngest_graphical_peak(
@@ -111,7 +113,7 @@ def youngest_graphical_peak(
     if not grains:
         print("No grains provided.")
         return float('nan')
-    distro = distributions.pdp_function(Sample("temp", grains), x_min=x_min, x_max=x_max, n_steps=n_steps)
+    distro = distributions.pdp_function(Sample("temp", grains), x_min=x_min, x_max=x_max)
     if not distro.x_values.any() or not distro.y_values.any():
         print("Empty distribution data.")
         return float('nan')
@@ -150,11 +152,11 @@ def youngest_statistical_population(
     best_count = 0
     for j in range(len(sorted_grains) - min_cluster_size + 1):
         subset = sorted_grains[: j + min_cluster_size]
-        wm_age, wm_err2s, mswd = get_weighted_mean(subset)
+        wm_age, wm_err1s, mswd = get_weighted_mean(subset)
         if j == 0 and mswd > mswd_threshold:
             continue
         if abs(mswd - 1) < abs(best_mswd - 1) if not np.isnan(best_mswd) else True:
-            best_grain = Grain(age=wm_age, uncertainty=wm_err2s)
+            best_grain = Grain(age=wm_age, uncertainty=wm_err1s)
             best_mswd = mswd
             best_count = len(subset)
         if mswd > 1:
@@ -181,12 +183,26 @@ def tau_method(
         return None, float('nan'), 0
     youngest_index = valid_clusters[0]
     selected_grains = grains_in_troughs[youngest_index]
-    tau_WM, tau_WM_err2s, tau_WM_MSWD = get_weighted_mean(selected_grains)
-    return Grain(age=tau_WM, uncertainty=tau_WM_err2s), len(selected_grains), tau_WM_MSWD
+    tau_WM, tau_WM_err1s, tau_WM_MSWD = get_weighted_mean(selected_grains)
+    return Grain(age=tau_WM, uncertainty=tau_WM_err1s), len(selected_grains), tau_WM_MSWD
 
-def youngest_gaussian_fit(grains: [Grain], n_steps: int=1000) -> (Grain, distributions.Distribution):
+'''def ygf2(grains: [Grain]):
+    def gauss(x, A, B):
+        y = A * np.exp(-1 * B * x ** 2)
+        return y
+
+    parameters, covariance = curve_fit(gauss, xdata, ydata)
+
+    fit_A = parameters[0]
+    fit_B = parameters[1]
+
+    fit_y = gauss(xdata, fit_A, fit_B)
+    return '''
+
+def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500) -> (Grain, distributions.Distribution):
+    n_steps = 10 * x_max - x_min + 1
     temp_sample = Sample("temp", grains)
-    distro = distributions.kde_function(temp_sample)
+    distro = distributions.pdp_function(temp_sample)
     x_values = np.array(distro.x_values)
     y_values = np.array(distro.y_values)
     def gaussian(x, a, mu, sigma):
@@ -263,7 +279,8 @@ def get_weighted_mean(
     n = len(ages)
     mswd = s / (n - 1)
     uncertainty_2s = stats.norm.ppf(confidence_level + (1 - confidence_level) / 2.) * np.sqrt(1. / np.sum(np.array(errors) ** (-2)))
-    return weighted_mean_age, uncertainty_2s, mswd
+    uncertainty_1s = uncertainty_2s / 2
+    return weighted_mean_age, uncertainty_1s, mswd
 
 def ranked_ages_plot(
         grains: [Grain],
@@ -356,26 +373,29 @@ def comparison_graph(
 
 def comparison_table(grains: [Grain]):
     ysg, ysg_n = youngest_single_grain(grains)
+    ysg_mswd = float('nan')
     ypp = Grain(youngest_graphical_peak(grains), float('nan'))
-    ypp_n = float('nan')
+    ypp_n, ypp_mswd = float('nan'), float('nan')
     ygf, _ = youngest_gaussian_fit(grains)
-    ygf_n = float('nan')
-    ygc1s, ygc1s_n, _ = youngest_cluster_1s(grains)
-    ygc2s, ygc2s_n, _ = youngest_cluster_2s(grains)
-    y3zo, y3zo_n, _ = youngest_3_zircons_overlap(grains)
-    y3za, y3za_n, _ = youngest_3_zircons(grains)
-    tau, tau_n, _ = tau_method(grains)
-    ysp, ysp_n, _ = youngest_statistical_population(grains)
+    ygf_n, ygf_mswd = float('nan'), float('nan')
+    ygc1s, ygc1s_n, ygc1s_mswd = youngest_cluster_1s(grains)
+    ygc2s, ygc2s_n, ygc2s_mswd = youngest_cluster_2s(grains)
+    y3zo, y3zo_n, y3zo_mswd = youngest_3_zircons_overlap(grains)
+    y3za, y3za_n, y3za_mswd = youngest_3_zircons(grains)
+    tau, tau_n, tau_mswd = tau_method(grains)
+    ysp, ysp_n, ysp_mswd = youngest_statistical_population(grains)
     methods = ['YSG', 'YPP', 'YGF', 'YGC1s', 'YGC2s', 'Y3ZO', 'Y3Za', 'TAU', 'YSP']
     ages = [ysg.age, ypp.age, ygf.age, ygc1s.age, ygc2s.age, y3zo.age, y3za.age, tau.age, ysp.age]
     uncertainties = [ysg.uncertainty, ypp.uncertainty, ygf.uncertainty, ygc1s.uncertainty, ygc2s.uncertainty,
                      y3zo.uncertainty, y3za.uncertainty, tau.uncertainty, ysp.uncertainty]
     n_values = [ysg_n, ypp_n, ygf_n, ygc1s_n, ygc2s_n, y3zo_n, y3za_n, tau_n, ysp_n]
+    mswd_values = [ysg_mswd, ypp_mswd, ygf_mswd, ygc1s_mswd, ygc2s_mswd, y3zo_mswd, y3za_mswd, tau_mswd, ysp_mswd]
     data = {
         f"% MDA (Ma)": ages,
         "1s (Myr)": uncertainties,
         "2s (Myr)": [uncertainty * 2 for uncertainty in uncertainties],
-        "n": n_values
+        "n": n_values,
+        "MSWD": mswd_values
     }
     df = pd.DataFrame(data, index=methods)
     df = df.rename_axis(columns="")
