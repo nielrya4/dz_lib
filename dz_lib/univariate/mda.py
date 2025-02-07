@@ -284,6 +284,8 @@ def get_weighted_mean(
 
 def ranked_ages_plot(
         grains: [Grain],
+        x_min: float = 0,
+        x_max: float = 4500,
         sort_with_uncertainty: bool=True,
         legend: bool=True,
         title: str=None,
@@ -318,6 +320,7 @@ def ranked_ages_plot(
         ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
     ax.invert_yaxis()
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
+    plt.xlim(x_min, x_max)
     plt.close()
     return fig
 
