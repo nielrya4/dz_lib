@@ -296,7 +296,6 @@ def ranked_ages_plot(
         color_1s: str = "black",
         color_2s: str = "cornflowerblue",
 ):
-
     if sort_with_uncertainty:
         sorted_grains = sorted(grains, key=lambda grain: grain.age + abs(grain.uncertainty)*2)
     else:
@@ -305,6 +304,17 @@ def ranked_ages_plot(
     uncertainties = np.array([abs(grain.uncertainty) for grain in sorted_grains])
     ranks = range(len(sorted_grains))
     fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
+    trimmed_ages = []
+    trimmed_uncertainties = []
+    trimmed_ranks = []
+    for i, age in enumerate(ages):
+        if x_min < age < x_max:
+            trimmed_ages.append(age)
+            trimmed_uncertainties.append(uncertainties[i])
+            trimmed_ranks.append(ranks[i])
+    ages = np.array(trimmed_ages)
+    uncertainties = np.array(trimmed_uncertainties)
+    ranks = np.array(trimmed_ranks)
     ax.scatter(ages, ranks, facecolors='white', edgecolors="k", marker='d', s=100, zorder=10)
     ax.hlines(ranks, ages - 2 * uncertainties, ages + 2 * uncertainties, color=color_2s, linewidth=4, label='2σ')
     ax.hlines(ranks, ages - uncertainties, ages + uncertainties, color=color_1s, linewidth=4, label='1σ')

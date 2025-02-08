@@ -12,6 +12,8 @@ def test():
     fitted_grain, fitted_distro = mda.youngest_gaussian_fit(new_sample.grains)
     graph = distributions.distribution_graph([distro, fitted_distro], fig_height=4, color_map="rainbow", x_min=128, x_max=143)
     graph.show()
+    graph = mda.ranked_ages_plot(sample.grains, x_min=128, x_max=143, fig_height=4)
+    graph.show()
     table = mda.comparison_table(new_sample.grains)
     print(table)
 
