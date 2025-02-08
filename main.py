@@ -14,6 +14,8 @@ def test():
     graph.show()
     graph = mda.ranked_ages_plot(sample.grains, x_min=128, x_max=143, fig_height=4)
     graph.show()
+    graph = mda.comparison_graph(sample.grains)
+    graph.show()
     table = mda.comparison_table(new_sample.grains)
     print(table)
 

@@ -338,6 +338,7 @@ def ranked_ages_plot(
 def comparison_graph(
         grains: [Grain],
         title: str = None,
+        legend: bool = True,
         font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
@@ -375,11 +376,12 @@ def comparison_graph(
         font_prop = None
     if title:
         ax.set_title(title, fontsize=font_size * 1.5, fontproperties=font_prop)
-    legend_elements = [
-        Line2D([0], [0], color='cornflowerblue', lw=5, label='2s'),
-        Line2D([0], [0], color='black', lw=5, label='1s')
-    ]
-    ax.legend(handles=legend_elements, loc='lower left')
+    if legend:
+        legend_elements = [
+            Line2D([0], [0], color='cornflowerblue', lw=5, label='2s'),
+            Line2D([0], [0], color='black', lw=5, label='1s')
+        ]
+        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
     fig.tight_layout()
     plt.close()
     return fig
