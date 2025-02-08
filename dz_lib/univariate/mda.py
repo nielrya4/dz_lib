@@ -220,7 +220,7 @@ def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500) -> (Grain, distr
     x_young = x_values[min_idx:tridx]
     y_young = y_values[min_idx:tridx]
     initial_guess = [y_young.max(), x_young[np.argmax(y_young)], np.std(x_young)]
-    params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess)
+    params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess, maxfev=5000)
     a_fit, mu_fit, sigma_fit = params
     YGF_1s = sigma_fit / np.sqrt(2)  # 1 sigma
     x_fit = np.linspace(x_values.min(), x_values.max(), n_steps)
