@@ -203,25 +203,28 @@ def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500) -> (Grain, distr
     distro = distributions.pdp_function(temp_sample)
     x_values = np.array(distro.x_values)
     y_values = np.array(distro.y_values)
+    length = len(x_values)
+    new_x_vals = x_values[:round(length/4)]
+    new_y_vals = y_values[:round(length/4)]
     def gaussian(x, a, mu, sigma):
         return a * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
-    troughs, _ = find_peaks(-y_values)
+    troughs, _ = find_peaks(-new_y_vals)
     if len(troughs) > 0:
         tridx = troughs[0]
     else:
-        tridx = len(x_values) - 1
-    mask = y_values[:tridx] > 1E-6
+        tridx = len(new_x_vals) - 1
+    mask = new_y_vals[:tridx] > 1E-6
     if np.any(mask):
         min_idx = np.where(mask)[0][0]
     else:
         min_idx = 0
-    x_young = x_values[min_idx:tridx]
-    y_young = y_values[min_idx:tridx]
+    x_young = new_x_vals[min_idx:tridx]
+    y_young = new_y_vals[min_idx:tridx]
     initial_guess = [y_young.max(), x_young[np.argmax(y_young)], np.std(x_young)]
     params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess, maxfev=5000)
     a_fit, mu_fit, sigma_fit = params
     YGF_1s = sigma_fit / np.sqrt(2)  # 1 sigma
-    x_fit = np.linspace(x_values.min(), x_values.max(), n_steps)
+    x_fit = np.linspace(new_x_vals.min(), new_x_vals.max(), n_steps)
     y_fit = gaussian(x_fit, *params)
     fitted_grain = Grain(mu_fit, YGF_1s)
     fitted_distro = distributions.Distribution(f"Youngest Gaussian Fit\nMean: {mu_fit:.2f} Ma\n1σ: {YGF_1s:.2f}", x_fit, y_fit)
