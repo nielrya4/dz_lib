@@ -46,7 +46,7 @@ def youngest_cluster_1s(
         YGC1s_idx = next((j for j, val in enumerate(YGC1s_mat[i]) if not val), n)
         ygc1s_data = sorted_grains[i:YGC1s_idx]
     if not ygc1s_data or len(ygc1s_data) < min_cluster_size:
-        return None, 0, 0
+        return Grain(float('nan'), float('nan')), 0, float('nan')
     weighted_mean, uncertainty, mswd = get_weighted_mean(
         grains=ygc1s_data,
         confidence_level=0.95
@@ -77,7 +77,7 @@ def youngest_cluster_2s(
         ygc2s_idx = next((j for j, x in enumerate(ygc2s_mat[i]) if not x), len(sorted_grains))
         youngest_cluster = sorted_grains[i:ygc2s_idx]
     if len(youngest_cluster) < min_cluster_size:
-        return None, 0, 0
+        return Grain(float('nan'), float('nan')), 0, float('nan')
     weighted_mean, uncertainty, mswd = get_weighted_mean(
         grains=youngest_cluster,
         confidence_level=0.95
@@ -193,41 +193,64 @@ def tau_method(grains: list[Grain], mode_req: int=3, thres: float = 0.01, min_di
             selected_grains = candidate
             break
     if not selected_grains or len(selected_grains) < mode_req:
-        return None, 0, 0
+        return Grain(float('nan'), float('nan')), 0, float('nan')
     tau_wm, tau_wm_err, tau_wm_mswd = get_weighted_mean(selected_grains, confidence_level=0.95)
     return Grain(age=tau_wm, uncertainty=tau_wm_err), len(selected_grains), tau_wm_mswd
 
-def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500) -> (Grain, distributions.Distribution):
+
+def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500):
     n_steps = 10 * x_max - x_min + 1
     temp_sample = Sample("temp", grains)
     distro = distributions.pdp_function(temp_sample)
+
     x_values = np.array(distro.x_values)
     y_values = np.array(distro.y_values)
-    length = len(x_values)
-    new_x_vals = x_values[:round(length/4)]
-    new_y_vals = y_values[:round(length/4)]
+
     def gaussian(x, a, mu, sigma):
         return a * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
-    troughs, _ = find_peaks(-new_y_vals)
-    if len(troughs) > 0:
-        tridx = troughs[0]
-    else:
-        tridx = len(new_x_vals) - 1
-    mask = new_y_vals[:tridx] > 1E-6
-    if np.any(mask):
-        min_idx = np.where(mask)[0][0]
-    else:
-        min_idx = 0
-    x_young = new_x_vals[min_idx:tridx]
-    y_young = new_y_vals[min_idx:tridx]
-    initial_guess = [y_young.max(), x_young[np.argmax(y_young)], np.std(x_young)]
-    params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess, maxfev=5000)
+
+    # Find troughs in the probability density function (PDP)
+    troughs, _ = find_peaks(-y_values)
+    tridx = troughs[0] if len(troughs) > 0 else len(x_values) - 1
+
+    # Identify the youngest age range
+    mask = y_values[:tridx] > 1E-6
+    min_idx = np.where(mask)[0][0] if np.any(mask) else 0
+
+    x_young = x_values[min_idx:tridx]
+    y_young = y_values[min_idx:tridx]
+
+    # Debugging: Ensure we have valid data
+    if len(x_young) < 3 or len(y_young) < 3:
+        raise ValueError("Not enough data points for Gaussian fitting.")
+
+    # Define a reasonable initial guess
+    initial_mu = x_young[np.argmax(y_young)]
+    initial_sigma = np.std(x_young) if np.std(x_young) > 0 else 1.0
+    initial_guess = [max(y_young), initial_mu, initial_sigma]
+
+    # Apply bounds to keep parameters within reasonable limits
+    bounds = ([0, x_young.min(), 0.1], [y_young.max() * 2, x_young.max(), np.ptp(x_young)])
+
+    try:
+        params, _ = curve_fit(gaussian, x_young, y_young, p0=initial_guess, bounds=bounds, maxfev=10000)
+    except RuntimeError as e:
+        raise RuntimeError(f"Curve fitting failed: {e}")
+
     a_fit, mu_fit, sigma_fit = params
     YGF_1s = sigma_fit / np.sqrt(2)  # 1 sigma
-    x_fit = np.linspace(new_x_vals.min(), new_x_vals.max(), n_steps)
+
+    # Generate fitted distribution curve
+    x_fit = np.linspace(x_values.min(), x_values.max(), n_steps)
     y_fit = gaussian(x_fit, *params)
+
+    # Create the output objects
     fitted_grain = Grain(mu_fit, YGF_1s)
-    fitted_distro = distributions.Distribution(f"Youngest Gaussian Fit\nMean: {mu_fit:.2f} Ma\n1σ: {YGF_1s:.2f}", x_fit, y_fit)
+    fitted_distro = distributions.Distribution(
+        f"Youngest Gaussian Fit\nMean: {mu_fit:.2f} Ma\n1σ: {YGF_1s:.2f}",
+        x_fit, y_fit
+    )
+    print(fitted_grain)
     return fitted_grain, fitted_distro
 
 # MDA utils:
@@ -363,9 +386,9 @@ def comparison_graph(
     tau, _, _ = tau_method(grains)
     ysp, _, _ = youngest_statistical_population(grains)
     methods = ['YSG', 'YPP', 'YGF', 'YGC1s', 'YGC2s', 'Y3ZO', 'Y3Za', 'TAU', 'YSP']
-    ages = [ysg.age, ypp.age, ygf.age, ygc1s.age, ygc2s.age, y3zo.age, y3za.age, tau.age, ysp.age]
-    uncertainties = [ysg.uncertainty, ypp.uncertainty, ygf.uncertainty, ygc1s.uncertainty, ygc2s.uncertainty,
-                     y3zo.uncertainty, y3za.uncertainty, tau.uncertainty, ysp.uncertainty]
+    grains = [ysg, ypp, ygf, ygc1s, ygc2s, y3zo, y3za, tau, ysp]
+    ages = [grain.age for grain in grains]
+    uncertainties = [grain.uncertainty for grain in grains]
     fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
     x = np.arange(len(methods))
     for i in range(len(methods)):
@@ -407,9 +430,9 @@ def comparison_table(grains: [Grain]):
     tau, tau_n, tau_mswd = tau_method(grains)
     ysp, ysp_n, ysp_mswd = youngest_statistical_population(grains)
     methods = ['YSG', 'YPP', 'YGF', 'YGC1s', 'YGC2s', 'Y3ZO', 'Y3Za', 'TAU', 'YSP']
-    ages = [ysg.age, ypp.age, ygf.age, ygc1s.age, ygc2s.age, y3zo.age, y3za.age, tau.age, ysp.age]
-    uncertainties = [ysg.uncertainty, ypp.uncertainty, ygf.uncertainty, ygc1s.uncertainty, ygc2s.uncertainty,
-                     y3zo.uncertainty, y3za.uncertainty, tau.uncertainty, ysp.uncertainty]
+    grains = [ysg, ypp, ygf, ygc1s, ygc2s, y3zo, y3za, tau, ysp]
+    ages = [grain.age for grain in grains]
+    uncertainties = [grain.uncertainty for grain in grains]
     n_values = [ysg_n, ypp_n, ygf_n, ygc1s_n, ygc2s_n, y3zo_n, y3za_n, tau_n, ysp_n]
     mswd_values = [ysg_mswd, ypp_mswd, ygf_mswd, ygc1s_mswd, ygc2s_mswd, y3zo_mswd, y3za_mswd, tau_mswd, ysp_mswd]
     data = {
