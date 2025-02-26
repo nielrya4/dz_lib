@@ -108,7 +108,7 @@ def to_xls(data_frame: DataFrame, include_header: bool = True, include_index: bo
     if include_header:
         headers = df.columns.tolist()
         if include_index:
-            headers.insert(0, df.index.name if df.index.name else "Index")  # Add index name or default "Index"
+            headers.insert(0, df.index.name if df.index.name else "")  # Add index name or default "Index"
         records.insert(0, headers)  # Insert headers as the first row
 
     p.save_as(array=records, dest_file_type='xls', dest_file_stream=buffer)
