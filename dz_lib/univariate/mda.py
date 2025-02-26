@@ -250,7 +250,6 @@ def youngest_gaussian_fit(grains: [Grain], x_min=0, x_max=4500):
         f"Youngest Gaussian Fit\nMean: {mu_fit:.2f} Ma\n1σ: {YGF_1s:.2f}",
         x_fit, y_fit
     )
-    print(fitted_grain)
     return fitted_grain, fitted_distro
 
 # MDA utils:

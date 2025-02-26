@@ -91,28 +91,34 @@ def dataframe_to_html(df: DataFrame, title:str=None):
         )
     )
 
-def to_xlsx(data_frame: DataFrame):
+def to_xlsx(data_frame: DataFrame, include_header: bool=True, include_index: bool=True):
     buffer = BytesIO()
-    data_frame.to_excel(buffer, index=True, engine='openpyxl', header=True)
+    data_frame.to_excel(buffer, index=include_index, engine='openpyxl', header=include_header)
     buffer.seek(0)
     return buffer
 
 
-def to_xls(data_frame: DataFrame):
+def to_xls(data_frame: DataFrame, include_header: bool = True, include_index: bool = True):
     buffer = BytesIO()
-    df = data_frame
-    headers = df.columns.tolist()
-    headers.reverse()
-    headers.append(" ")
-    headers.reverse()
-    records = [headers] + df.reset_index().values.tolist()
+
+    df = data_frame.copy()  # Copy to avoid modifying the original DataFrame
+
+    records = df.reset_index().values.tolist() if include_index else df.values.tolist()
+
+    if include_header:
+        headers = df.columns.tolist()
+        if include_index:
+            headers.insert(0, df.index.name if df.index.name else "Index")  # Add index name or default "Index"
+        records.insert(0, headers)  # Insert headers as the first row
+
     p.save_as(array=records, dest_file_type='xls', dest_file_stream=buffer)
     buffer.seek(0)
+
     return buffer
 
-def to_csv(data_frame: DataFrame):
+def to_csv(data_frame: DataFrame, include_header: bool=True, include_index: bool=True):
     buffer = BytesIO()
-    data_frame.to_csv(buffer, index=True, header=True)
+    data_frame.to_csv(buffer, index=include_index, header=include_header)
     buffer.seek(0)
     return buffer
 
