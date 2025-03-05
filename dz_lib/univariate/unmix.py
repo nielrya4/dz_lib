@@ -1,4 +1,3 @@
-from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 from dz_lib.univariate import metrics
@@ -14,8 +13,7 @@ class Contribution:
         self.standard_deviation = standard_deviation
 
 def monte_carlo_model(sink_y_values: [float], sources_y_values: [[float]], n_trials: int=10000, metric: str="cross_correlation"):
-    with ProcessPoolExecutor() as executor:
-        trials = list(executor.map(create_trial, [(sink_y_values, sources_y_values, metric)] * n_trials))
+    trials = [create_trial((sink_y_values, sources_y_values, metric)) for _ in range(n_trials)]
     if metric == "cross_correlation":
         sorted_trials = sorted(trials, key=lambda x: x.test_val, reverse=True)
     elif metric == "ks" or metric == "kuiper":
@@ -122,7 +120,7 @@ def top_trials_graph(
         fig_height: float = 7,
     ):
     #todo: pass in entire distributions instead of just y values
-    x = np.linspace(x_range[0], x_range[1], 1000).reshape(-1, 1)
+    x = np.linspace(x_range[0], x_range[1], len(sink_line)).reshape(-1, 1)
     if font_path:
         font = fonts.get_font(font_path)
     else:
