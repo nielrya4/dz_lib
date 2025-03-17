@@ -1,4 +1,3 @@
-from numpy.distutils.conv_template import header
 from pandas import DataFrame
 from io import BytesIO
 import pyexcel as p
