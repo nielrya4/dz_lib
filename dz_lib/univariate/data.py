@@ -5,6 +5,12 @@ class Grain:
         self.age = age
         self.uncertainty = uncertainty
 
+    def to_dict(self):
+        return {
+            'age': self.age,
+            'uncertainty': self.uncertainty
+        }
+
 class Sample:
     def __init__(self, name: str, grains: [Grain]):
         self.name = name
@@ -44,3 +50,9 @@ class Sample:
             if grain.age > q3 + 1.5 * iqr or grain.age < q1 - 1.5 * iqr:
                 outliers.append(grain)
         return outliers
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'grains': [grain.to_dict() for grain in self.grains]
+        }

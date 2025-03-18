@@ -5,6 +5,12 @@ class BivariateGrain:
         self.age = age
         self.hafnium = hafnium
 
+    def to_dict(self):
+        return {
+            'age': self.age,
+            'hafnium': self.hafnium
+        }
+
 class BivariateSample:
     def __init__(self, name: str, grains: [BivariateGrain]):
         self.name = name
@@ -39,3 +45,9 @@ class BivariateSample:
             if grain.age > q3 + 1.5 * iqr or grain.age < q1 - 1.5 * iqr:
                 outliers.append(grain)
         return outliers
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'grains': [grain.to_dict() for grain in self.grains]
+        }
