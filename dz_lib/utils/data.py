@@ -26,7 +26,7 @@ def excel_to_array(file_path):
 def read_1d_samples(spreadsheet_array, max_age: int=4500):
     samples = []
     for i in range(0, len(spreadsheet_array[0]), 2):
-        sample_name = spreadsheet_array[0][i]
+        sample_name = str(spreadsheet_array[0][i])
         if sample_name is not None:
             grains = []
             for row_data in spreadsheet_array[1:]:
@@ -46,7 +46,7 @@ def read_1d_samples(spreadsheet_array, max_age: int=4500):
 def read_2d_samples(spreadsheet_array, max_age: int=4500):
     samples = []
     for i in range(0, len(spreadsheet_array[0]), 2):
-        sample_name = spreadsheet_array[0][i]
+        sample_name = str(spreadsheet_array[0][i])
         if sample_name is not None:
             grains = []
             for row_data in spreadsheet_array[1:]:
