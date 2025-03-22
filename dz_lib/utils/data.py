@@ -47,6 +47,10 @@ def read_2d_samples(spreadsheet_array, max_age: int=4500):
     samples = []
     for i in range(0, len(spreadsheet_array[0]), 2):
         sample_name = str(spreadsheet_array[0][i])
+        if sample_name[:2] == ".0":
+            pass
+        else:
+            sample_name = str(int(sample_name))
         if sample_name is not None:
             grains = []
             for row_data in spreadsheet_array[1:]:
