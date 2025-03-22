@@ -58,7 +58,6 @@ def mds_function(samples: [Sample], metric: str = "similarity"):
                     distance = dissimilarity
                     nearest_sample = samples[j]
         if nearest_sample is not None:
-            print(nearest_sample.name)
             x1, y1 = scaled_mds_result[i]
             x2, y2 = scaled_mds_result[samples.index(nearest_sample)]
             points.append(MDSPoint(x1, y1, samples[i].name, nearest_neighbor=(x2, y2)))
