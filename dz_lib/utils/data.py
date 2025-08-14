@@ -25,21 +25,25 @@ def excel_to_array(file_path):
 
 def read_1d_samples(spreadsheet_array, max_age: int=4500):
     samples = []
-    for i in range(0, len(spreadsheet_array[0]), 2):
+    num_cols = len(spreadsheet_array[0])
+    
+    for i in range(0, num_cols, 2):
         sample_name = str(spreadsheet_array[0][i])
         if sample_name is not None:
             grains = []
             for row_data in spreadsheet_array[1:]:
-                age = row_data[i]
-                if not (isinstance(age, float) or isinstance(age, int)):
-                    age = None
-                uncertainty = row_data[i + 1] if i + 1 < len(row_data) else None
-                if not (isinstance(uncertainty, float) or isinstance(uncertainty, int)):
-                    uncertainty = None
-                if age is not None and uncertainty is not None and float(age) < max_age:
-                    grains.append(one_d.Grain(float(age), float(uncertainty)))
-            sample = one_d.Sample(sample_name, grains)
-            samples.append(sample)
+                if i < len(row_data):
+                    age = row_data[i]
+                    uncertainty = row_data[i + 1] if i + 1 < len(row_data) else None
+                    
+                    if (isinstance(age, (float, int)) and 
+                        isinstance(uncertainty, (float, int)) and 
+                        float(age) < max_age):
+                        grains.append(one_d.Grain(float(age), float(uncertainty)))
+            
+            if grains:
+                sample = one_d.Sample(sample_name, grains)
+                samples.append(sample)
     return samples
 
 
