@@ -107,7 +107,7 @@ def distribution_graph(
             y = distribution.y_values
             ax[0, 0].plot(x, y, label=header, color=colors[i])
         if legend:
-            ax[0, 0].legend(loc='upper left', bbox_to_anchor=(1, 1))
+            ax[0, 0].legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=font_size)
         ax_list = [ax[0, 0]]
     else:
         fig = plt.figure(figsize=(fig_width, fig_height), dpi=100)
@@ -121,10 +121,7 @@ def distribution_graph(
             y = distribution.y_values
             ax.plot(x, y, label=header)
             if legend:
-                ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
-
-    for ax in ax_list:
-        ax.set_xlim(x_min, x_max)
+                ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=font_size)
 
     # Set font
     if font_path:
@@ -132,13 +129,17 @@ def distribution_graph(
     else:
         font = fonts.get_default_font()
 
-    title_size = font.get_size() * 2
-    fig.suptitle(title, fontsize=title_size, fontproperties=font)
+    for ax in ax_list:
+        ax.set_xlim(x_min, x_max)
+        ax.tick_params(axis='both', which='major', labelsize=font_size)
+        plt.setp(ax.get_xticklabels(), fontsize=font_size, fontproperties=font)
+        plt.setp(ax.get_yticklabels(), fontsize=font_size, fontproperties=font)
 
-    fig.text(0.5, 0.01, 'Age (Ma)', ha='center', va='center', fontsize=font_size, fontproperties=font)
+    title_size = font_size * 1.75
+    fig.suptitle(title, fontsize=title_size, fontproperties=font)
+    fig.text(0.5, 0.02, 'Age (Ma)', ha='center', va='center', fontsize=font_size, fontproperties=font)
     fig.text(0.01, 0.5, 'Probability Differential', va='center', rotation='vertical',
              fontsize=font_size, fontproperties=font)
-
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
     plt.xlim(x_min, x_max)
 
