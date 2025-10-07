@@ -82,14 +82,14 @@ def mds_graph(
         x2, y2 = point.nearest_neighbor
         sample_name = point.label
         ax.scatter(x1, y1, color=colors[i])
-        ax.text(x1, y1 + 0.005, sample_name, fontsize=8, ha='center', va='center')
+        ax.text(x1, y1 + 0.005, sample_name, fontsize=font_size*0.75, ha='center', va='center')
         if (x2, y2) is not None:
             ax.plot([x1, x2], [y1, y2], 'k--', linewidth=0.5)
     if font_path:
         font = fonts.get_font(font_path)
     else:
         font = fonts.get_default_font()
-    title_size = font_size*2
+    title_size = font_size * 1.75
     fig.suptitle(title, fontsize=title_size, fontproperties=font)
     fig.text(0.5, 0.01, 'Dimension 1', ha='center', va='center', fontsize=font_size, fontproperties=font)
     fig.text(0.01, 0.5, 'Dimension 2', va='center', rotation='vertical', fontsize=font_size, fontproperties=font)

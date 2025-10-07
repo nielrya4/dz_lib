@@ -15,12 +15,8 @@ def test():
         return
 
 
-    # Extract y values for unmixing
-    sink_y = sink_distro.y_values
-    sources_y = [source.y_values for source in source_distros]
-    
-    # Run Monte Carlo unmixing model
-    contributions, std_devs, top_lines = unmix.monte_carlo_model(sink_y, sources_y, n_trials=1000)
+    # Run Monte Carlo unmixing model with Distribution objects
+    contributions, std_devs, top_distributions = unmix.monte_carlo_model(sink_distro, source_distros, n_trials=1000)
     
     # Create contribution objects
     source_names = [f"Source_{i+1}" for i in range(len(source_distros))]
@@ -37,7 +33,7 @@ def test():
     contrib_graph.show()
     
     # Show top trials graph
-    trials_graph = unmix.top_trials_graph(sink_y, top_lines, title="Best Fitting Models")
+    trials_graph = unmix.top_trials_graph(sink_distro, top_distributions, title="Best Fitting Models")
     trials_graph.show()
 
 def similarity_matrix_for_testdata():

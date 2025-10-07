@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
 from dz_lib.univariate import metrics
+from dz_lib.univariate.distributions import Distribution, distribution_graph
 from dz_lib.utils import fonts
 import random
 from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
 
 
 class Contribution:
@@ -12,7 +14,9 @@ class Contribution:
         self.contribution = contribution
         self.standard_deviation = standard_deviation
 
-def monte_carlo_model(sink_y_values: [float], sources_y_values: [[float]], n_trials: int=10000, metric: str="cross_correlation"):
+def monte_carlo_model(sink_distribution: Distribution, source_distributions: [Distribution], n_trials: int=10000, metric: str="cross_correlation"):
+    sink_y_values = sink_distribution.y_values
+    sources_y_values = [dist.y_values for dist in source_distributions]
     trials = [create_trial((sink_y_values, sources_y_values, metric)) for _ in range(n_trials)]
     if metric == "cross_correlation":
         sorted_trials = sorted(trials, key=lambda x: x.test_val, reverse=True)
@@ -22,14 +26,20 @@ def monte_carlo_model(sink_y_values: [float], sources_y_values: [[float]], n_tri
         raise ValueError(f"Unknown metric '{metric}'")
     top_trials = sorted_trials[:10]
     top_lines = [trial.model_line for trial in top_trials]
+    
+    # Convert top lines back to Distribution objects
+    x_values = sink_distribution.x_values
+    top_distributions = [Distribution(f"Top_Trial_{i+1}", x_values, y_values) 
+                        for i, y_values in enumerate(top_lines)]
+    
     random_configurations = [trial.random_configuration for trial in top_trials]
     source_contributions = np.average(random_configurations, axis=0) * 100
     source_std = np.std(random_configurations, axis=0) * 100
-    return source_contributions, source_std, top_lines
+    return source_contributions, source_std, top_distributions
 
 def create_trial(args):
-    sink_line, source_lines, test_type = args
-    return UnmixingTrial(sink_line, source_lines, metric=test_type)
+    sink_y_values, sources_y_values, test_type = args
+    return UnmixingTrial(sink_y_values, sources_y_values, metric=test_type)
 
 class UnmixingTrial:
     def __init__(self, sink_line: [float], source_lines: [[float]], metric: str="cross_correlation"):
@@ -110,30 +120,50 @@ def relative_contribution_table(
 
 
 def top_trials_graph(
-        sink_line: [float],
-        model_lines: [[float]],
-        x_range: [float, float] = [0, 4500],
+        sink_distribution: Distribution,
+        model_distributions: [Distribution],
+        x_min: float = 0,
+        x_max: float = 4500,
         title: str = "Top Trials Graph",
         font_path: str = None,
         font_size: float = 12,
         fig_width: float = 9,
         fig_height: float = 7,
     ):
-    #todo: pass in entire distributions instead of just y values
-    x = np.linspace(x_range[0], x_range[1], len(sink_line)).reshape(-1, 1)
-    if font_path:
-        font = fonts.get_font(font_path)
-    else:
-        font = fonts.get_default_font()
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=100)
-    for i, model_kde in enumerate(model_lines):
-        ax.plot(x, model_kde, 'c-', label="Top Trials" if i == 0 else "_Top Trials")
-        ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    ax.plot(x, sink_line, 'b-', label="Sink Sample")
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    ax.set_title(title, fontsize=font_size*2, fontproperties=font)
-    ax.set_xlabel("Age (Ma)", fontsize=font_size, fontproperties=font)
-    ax.set_ylabel("Probability Differential", fontsize=font_size, fontproperties=font)
-    plt.tight_layout()
-    plt.close()
+    # Plot trial distributions first (so sink appears on top)
+    trial_distributions = model_distributions
+    
+    # Create custom colormap using original colors: cyan for trials, blue for sink
+    num_distributions = len(trial_distributions) + 1
+    colors = ['cyan'] * len(trial_distributions)  # Cyan for trial lines
+    colors.append('blue')  # Blue for sink sample
+    custom_colormap = ListedColormap(colors)
+    
+    # Combine trial distributions first, then sink (for plotting order)
+    all_distributions = trial_distributions + [sink_distribution]
+    
+    # Use the distributions module's graph function without legend
+    fig = distribution_graph(
+        distributions=all_distributions,
+        x_min=x_min,
+        x_max=x_max,
+        title=title,
+        font_path=font_path,
+        font_size=font_size,
+        fig_width=fig_width,
+        fig_height=fig_height,
+        legend=False,
+        stacked=False,
+        color_map=custom_colormap
+    )
+    
+    # Add custom legend
+    ax = fig.get_axes()[0]
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='cyan', label='Top Trials'),
+        Line2D([0], [0], color='blue', label=sink_distribution.name)
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=font_size)
+    
     return fig

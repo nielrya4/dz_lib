@@ -356,7 +356,7 @@ def ranked_ages_plot(
     if title:
         ax.set_title(title, fontsize=font_size * 1.5, fontproperties=font)
     if legend:
-        ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+        ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=font_size)
     ax.invert_yaxis()
     fig.tight_layout(rect=[0.025, 0.025, 0.975, 1])
     plt.xlim(x_min, x_max)
@@ -410,7 +410,7 @@ def comparison_graph(
             Line2D([0], [0], color='cornflowerblue', lw=5, label='2s'),
             Line2D([0], [0], color='black', lw=5, label='1s')
         ]
-        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
+        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1), fontsize=font_size)
     fig.tight_layout()
     plt.close()
     return fig

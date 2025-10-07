@@ -129,11 +129,22 @@ def distribution_graph(
     else:
         font = fonts.get_default_font()
 
-    for ax in ax_list:
+    for i, ax in enumerate(ax_list):
         ax.set_xlim(x_min, x_max)
         ax.tick_params(axis='both', which='major', labelsize=font_size)
-        plt.setp(ax.get_xticklabels(), fontsize=font_size, fontproperties=font)
+        
+        # Only show x-tick labels on the bottommost subplot when stacked
+        if stacked and i < len(ax_list) - 1:
+            ax.tick_params(axis='x', labelbottom=False)
+        else:
+            plt.setp(ax.get_xticklabels(), fontsize=font_size, fontproperties=font)
+        
         plt.setp(ax.get_yticklabels(), fontsize=font_size, fontproperties=font)
+        
+        # Ensure clean background and proper tick visibility
+        ax.set_facecolor('white')
+        ax.tick_params(axis='x', colors='black', width=2)
+        ax.tick_params(axis='y', colors='black', width=2)
 
     title_size = font_size * 1.75
     fig.suptitle(title, fontsize=title_size, fontproperties=font)
