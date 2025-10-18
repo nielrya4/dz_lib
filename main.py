@@ -2,7 +2,7 @@ from dz_lib.utils import data, matrices
 from dz_lib.univariate import distributions, unmix
 
 def test():
-    samples_array = data.excel_to_array("/home/ryan/Desktop/dz_data/Anta_DZmix_Input_1D_only.xlsx")
+    samples_array = data.excel_to_array("/home/ryan/Desktop/dz_data/20_50_30.xlsx")
     samples = data.read_1d_samples(samples_array)
     distros = [distributions.kde_function(sample) for sample in samples]
     

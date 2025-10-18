@@ -108,6 +108,7 @@ def relative_contribution_table(
     sample_names = [contribution.name for contribution in contributions]
     percent_contributions = [contribution.contribution for contribution in contributions]
     standard_deviations = [contribution.standard_deviation for contribution in contributions]
+    
     data = {
         f"% Contribution (metric={metric})": percent_contributions,
         "Standard Deviation": standard_deviations
@@ -141,7 +142,11 @@ def top_trials_graph(
     
     # Combine trial distributions first, then sink (for plotting order)
     all_distributions = trial_distributions + [sink_distribution]
-    
+
+    r2_vals = [metrics.r2(trial_distro.y_values, sink_distribution.y_values) for trial_distro in trial_distributions]
+    avg_r2 = np.average(r2_vals)
+    title = title + f" (r^2={avg_r2})"
+
     # Use the distributions module's graph function without legend
     fig = distribution_graph(
         distributions=all_distributions,
