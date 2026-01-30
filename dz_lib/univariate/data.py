@@ -56,3 +56,10 @@ class Sample:
             'name': self.name,
             'grains': [grain.to_dict() for grain in self.grains]
         }
+    def subset(self, min_age: float, max_age: float, uncertainty_coefficient: float=0):
+        subset_grains = []
+        for grain in self.grains:
+            if grain.age - (grain.uncertainty * uncertainty_coefficient) >= min_age:
+                if grain.age + (grain.uncertainty * uncertainty_coefficient) <= max_age:
+                    subset_grains.append(grain)
+        return Sample(self.name, subset_grains)
